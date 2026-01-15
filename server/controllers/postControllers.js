@@ -95,25 +95,34 @@ const getPost = async (req, res, next) => {
 const getPostbyCategory = async (req, res, next) => {
   try {
     const { category } = req.params;
-    const catPosts = await Post.find({ category }).sort({ createdAt: -1 });
+    const catPosts = await Post.find({
+      category: { $regex: new RegExp(`^${category}$`, "i") } // match ignoring case
+    }).sort({ createdAt: -1 });
+
     res.status(200).json(catPosts);
   } catch (err) {
-    return next(new HttpError("err"));
+    return next(new HttpError("Error fetching category posts", 500));
   }
 };
 
-//===================GET USER/ AUTHOR POST
-// GET: api/posts/uers/:id
-//UNPROTECTED
+
+//================= GET USER/ AUTHOR POST
+// GET: api/posts/users/:id
+// UNPROTECTED
 const getUserPosts = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const posts = await Post.find({ creator: id }).sort({ createdAt: -1 });
-    res.status(200).json(posts);
+
+    // Find posts where creator = id
+    const userPosts = await Post.find({ creator: id }).sort({ createdAt: -1 });
+
+    res.status(200).json(userPosts);
   } catch (err) {
-    return next(new HttpError(err));
+    console.error("Error in getUserPosts:", err.message);
+    return next(new HttpError("Fetching user posts failed", 500));
   }
 };
+
 
 //===================DELETE POST
 // POST : api/posts/:id

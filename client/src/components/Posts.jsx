@@ -32,17 +32,17 @@ const Posts = () => {
       {posts.length > 0 ? (
         <div className="container posts__container">
           {posts.map(
-            ({ _id:id, thumbnail, category, title, description,creator,createdAt }) => (
+            (post) => (
               <PostItem
-                key={id}
-                postID={id}
-                thumbnail={thumbnail}
-                category={category}
-                title={title}
-                desc={description}
-                authorID={creator}
-                createdAt={createdAt}
-              />
+              key={post._id}
+              postID={post._id}
+              thumbnail={post.thumbnail}
+              category={post.category}
+              title={post.title}
+              desc={post.description}
+              authorID={post.creator}
+              createdAt={post.createdAt}
+            />
             )
           )}
         </div>

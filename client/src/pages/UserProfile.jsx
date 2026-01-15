@@ -1,5 +1,5 @@
 import React, { useImperativeHandle } from "react";
-import Avatar from "../images/avatar1.jpg";
+import Avatar from "../images/avatar2.jpg";
 import { FaCheck, FaEdit } from "react-icons/fa";
 import { useState, useContext } from "react";
 import { Link } from "react-router-dom";
@@ -54,7 +54,7 @@ const UserProfile = () => {
               <FaCheck />
             </button>
           </div>
-          <h1>Tabuuuuu</h1>
+          <h1>{currentUser?.name || "User"}</h1>
           {/*form to update user details*/}
           <form className="form profile__form">
             <p className="form__error-message">This is an error message</p>

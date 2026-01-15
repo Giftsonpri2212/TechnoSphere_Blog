@@ -1,69 +1,75 @@
-import React from "react";
+import React, { useEffect, useContext, useState } from "react";
 import PostAuthor from "../components/PostAuthor";
-import { Link } from "react-router-dom";
-import Thumbnail from "../images/blog24.jpg";
+import { Link, useParams } from "react-router-dom";
+import Loader from "./Loader";
+import DeletePosts from "./DeletePosts";
+import { UserContext } from "../context/userContext";
+import axios from "axios";
 
 const PostDetail = () => {
+  const { id } = useParams();
+  const [post, setPost] = useState(null);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { currentUser } = useContext(UserContext);
+
+  useEffect(() => {
+    const getPost = async () => {
+      setIsLoading(true);
+      try {
+        const response = await axios.get(
+          `${process.env.REACT_APP_BASE_URL}/posts/${id}`
+        );
+        setPost(response.data);
+      } catch (error) {
+        setError(error);
+      }
+      setIsLoading(false);
+    };
+
+    getPost();
+  }, []);
+
+  if (isLoading) {
+    return <Loader />;
+  }
+
   return (
     <section className="post-detail">
-      <div className="container post-detail__container">
-        <div className="post-detail__header">
-          <PostAuthor />
-          <div className="post-detail__ buttons">
-            <Link to={`/posts/werwer/edit`} className="btn sm primary">
-              Edit
-            </Link>
-            <Link to={`posts/werwer/delete`} className="btn sm danger">
-              Delete
-            </Link>
+      {error && <p className="error">{error} </p>}
+      {post && (
+        <div className="container post-detail__container">
+          <div className="post-detail__header">
+            {/* PostAuthor requires props (authorID, createdAt) 
+              – but leaving as is for now */}
+            <PostAuthor authorID={post.creator} createdAt={post.createdAt} />
+
+            {currentUser?.id == post?.creator && (
+              <div className="post-detail__button">
+                <Link
+                  to={`/posts/${post?._id}/edit`}
+                  className="btn sm primary"
+                >
+                  Edit
+                </Link>
+                <DeletePosts postId={id} />
+              </div>
+            )}
           </div>
+
+          <h1>{post.title}</h1>
+
+          <div className="post-detail__thumbnail">
+            {/* Fixed img tag */}
+            <img
+              src={`${process.env.REACT_APP_ASSETS_URL}/uploads/${post.thumbnail}`}
+              alt="Post Thumbnail"
+            />
+          </div>
+          <p dangerouslySetInnerHTML={{ __html: post.description }}></p>
         </div>
-        <h1>This is the post title</h1>
-        <div className="post-detail__thumbnail">
-          <img src={Thumbnail} alt=""></img>
-        </div>
-        <p>
-          Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aut expedita
-          fugit ipsum amet sapiente dolore autem illum quo delectus
-          consequuntur. Hic ipsum ad aut repudiandae totam modi porro, nobis
-          pariatur.
-        </p>
-        <p>
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Et labore
-          tempore sint dicta! Esse repellendus voluptates quidem quaerat tempora
-          tenetur sequi amet incidunt similique. Culpa eaque consectetur
-          sapiente rerum quae, voluptatibus, mollitia odio optio fugiat
-          architecto vitae aperiam dolorem neque cupiditate labore consequatur
-          porro est omnis?
-        </p>
-        <p>
-          Quam praesentium ut dolore! Lorem ipsum dolor sit amet consectetur
-          adipisicing elit. Iusto, repellat. Perspiciatis odit culpa dolorem.
-          Vel eius sit, incidunt eaque corporis totam optio dolore quo hic ipsum
-          commodi fugit nisi tenetur perspiciatis quasi deleniti itaque
-          molestias, quibusdam, repudiandae laborum eum quisquam! Veniam iusto
-          fugit in nostrum sed hic dolorem animi! Molestiae, ut eius.
-          Asperiores, adipisci, ex numquam quasi tempora repellendus,
-          reprehenderit facilis tempore magni minus accusantium quam molestias
-          deleniti necessitatibu Iusto voluptas voluptatum, reiciendis ducimus
-          quos repellendus suscipit possimus recusandae fugit modi neque sit qui
-          illo incidunt molestias a labore tempore dolores facilis quidem
-          deleniti quas cupiditate animi. Facilis, quos nobis.
-        </p>
-        <p>
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Praesentium,
-          quam fuga. Impedit sequi magnam asperiores laboriosam? Pariatur illum
-          provident quas sunt explicabo quos magni corrupti?Lorem, ipsum dolor
-          sit amet consectetur adipisicing elit. Quidem, perspiciatis.
-          Reprehenderit laborum blanditiis eos maiores fuga illo et omnis
-          delectus!
-        </p>
-        <p>
-          Lorem ipsum, dolor sit amet consectetur adipisicing elit. Officiis,
-          repudiandae aut cumque amet dicta earum excepturi tempore quo
-          architecto esse incidunt, dolore, nemo quaerat voluptates?
-        </p>
-      </div>
+      )}
     </section>
   );
 };

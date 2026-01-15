@@ -63,17 +63,19 @@ const registerUser = async (req, res, next) => {
 const loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    console.log(email);
+    console.log(password);
     if (!email || !password) {
-      return next(HttpError("Fill in all fields", 422));
+      return next(new HttpError("Fill in all fields", 422));
     }
     const newEmail = email.toLowerCase();
     const user = await User.findOne({ email: newEmail });
     if (!user) {
-      return next(new HttpError("Invalid credentials", 422));
+      return next(new HttpError("Invalid credentials", 401));
     }
     const comparePass = await bcrypt.compare(password, user.password);
     if (!comparePass) {
-      return next(HtppError("Invalid credentials", 422));
+      return next(new HttpError("Invalid credentials", 422));
     }
     const { _id: id, name } = user;
     const token = jwt.sign({ id, name }, process.env.JWT_SECRET, {
@@ -93,7 +95,7 @@ const loginUser = async (req, res, next) => {
 const getUser = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const user = await User.findById(id).select("password");
+    const user = await User.findById(id).select("name avatar password");
     if (!user) {
       return next(new HttpError("User not found.", 404));
     }
@@ -214,16 +216,19 @@ const editUser = async (req, res, next) => {
 };
 
 //************************  GET AUTHORS *******************//
-//POST : api/users/authors
-// PROTECTED
+//GET : api/users (not POST)
+//UNPROTECTED (since you're just listing authors)
 const getAuthors = async (req, res, next) => {
   try {
-    const authors = await User.find().select("password");
+    const authors = await User.find().select("name avatar posts"); 
+    console.log("Authors fetched:", authors); // ✅ Debug
     res.json(authors);
   } catch (error) {
-    return next(new HttpError(error));
+    return next(new HttpError(error.message || "Fetching authors failed", 500));
   }
 };
+
+
 
 module.exports = {
   registerUser,

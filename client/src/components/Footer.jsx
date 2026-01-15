@@ -5,7 +5,7 @@ const Footer = () => {
     <footer>
       <ul className="footer__categories">
         <li>
-          <Link to="/posts/categories/programminglanguages">Programming</Link>
+          <Link to="/posts/categories/programming ">Programming</Link>
         </li>
         <li>
           <Link to="/posts/categories/dsa">DSA</Link>
@@ -58,7 +58,7 @@ const Footer = () => {
         </li>
       </ul>
       <div className="footer__copyright">
-        <small>All Rights Reserved &copy; Copyright,Tabu Blogs</small>
+        <small>All Rights Reserved &copy; Copyright,TechnoSphere</small>
       </div>
     </footer>
   );
