@@ -17,7 +17,10 @@ import DeletePosts from "./pages/DeletePosts";
 import CategoryPosts from "./pages/CategoryPosts";
 import CreatePosts from "./pages/CreatePosts";
 import Logout from "./pages/Logout";
+import Notifications from "./pages/Notifications";
 import UserProvider from "./context/userContext";
+import * as serviceWorkerRegistration from "./serviceWorkerRegistration";
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -36,6 +39,7 @@ const router = createBrowserRouter([
       { path: "myposts/:id", element: <Dashboard /> },
       { path: "posts/:id/edit", element: <EditPost /> },
       { path: "posts/:id/delete", element: <DeletePosts /> },
+      { path: "notifications", element: <Notifications /> },
       { path: "logout", element: <Logout /> },
     ],
   },
@@ -46,3 +50,5 @@ root.render(
     <RouterProvider router={router} />
   </React.StrictMode>
 );
+
+serviceWorkerRegistration.register();

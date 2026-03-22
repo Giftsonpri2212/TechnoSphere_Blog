@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import ListSkeleton from "../components/ListSkeleton";
+import EmptyStateCard from "../components/EmptyStateCard";
 
 const Authors = () => {
   const [authors, setAuthors] = useState([]);
@@ -11,9 +13,7 @@ const Authors = () => {
       setIsLoading(true);
       try {
         const url = `${process.env.REACT_APP_BASE_URL}/users`;
-        console.log("Fetching authors from:", url);
         const response = await axios.get(url);
-        console.log("API response:", response.data);
         setAuthors(response.data);
       } catch (error) {
         console.error("Error fetching authors:", error);
@@ -26,7 +26,7 @@ const Authors = () => {
   return (
     <section className="authors">
       {isLoading ? (
-        <h2 className="center">Loading...</h2>
+        <ListSkeleton count={8} />
       ) : authors.length > 0 ? (
         <div className="container authors__container">
           {authors.map((author) => (
@@ -42,7 +42,7 @@ const Authors = () => {
                       ? `${process.env.REACT_APP_ASSETS_URL}/uploads/${author.avatar}`
                       : "/default-avatar.png"
                   }
-                  alt={`Image of ${author.name}`}
+                  alt={`${author.name} avatar`}
                 />
               </div>
               <div className="author__info">
@@ -53,7 +53,10 @@ const Authors = () => {
           ))}
         </div>
       ) : (
-        <h2 className="center">No users/authors found</h2>
+        <EmptyStateCard
+          title="No authors found"
+          subtitle="No author profiles are available right now."
+        />
       )}
     </section>
   );

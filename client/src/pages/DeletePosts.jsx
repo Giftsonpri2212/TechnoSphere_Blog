@@ -1,16 +1,17 @@
 import React, { useContext, useEffect } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
-import axios from "axios"; // ✅ Missing import
+import { useNavigate, useLocation } from "react-router-dom";
 import { UserContext } from "../context/userContext";
+import axios from "axios";
+import Loader from "./Loader";
+import { useState } from "react";
 
-const DeletePosts = ({ id }) => {
-  // ✅ Accept id as prop
+const DeletePosts = ({ postId: id }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser } = useContext(UserContext);
   const token = currentUser?.token;
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Redirect to login if not logged in
   useEffect(() => {
     if (!token) {
       navigate("/login");
@@ -18,9 +19,10 @@ const DeletePosts = ({ id }) => {
   }, [token, navigate]);
 
   const removePost = async (id) => {
+    setIsLoading(true);
     try {
       const response = await axios.delete(
-        `${process.env.REACT_APP_}/posts/${id}`,
+        `${process.env.REACT_APP_BASE_URL}/posts/${id}`,
         {
           withCredentials: true,
           headers: { Authorization: `Bearer ${token}` },
@@ -29,20 +31,28 @@ const DeletePosts = ({ id }) => {
 
       if (response.status === 200) {
         if (location.pathname === `/myposts/${currentUser.id}`) {
-          navigate(0); // refresh page
+          window.location.reload(); // refresh the page
         } else {
           navigate("/");
         }
       }
+      setIsLoading(false);
     } catch (error) {
-      console.error("Couldn't delete post", error);
+      console.error(
+        "Error deleting post:",
+        error.response?.data || error.message
+      );
     }
   };
 
+  if (isLoading) {
+    return <Loader />;
+  }
+
   return (
-    <Link className="btn sm danger" onClick={() => removePost(id)}>
+    <button className="btn sm danger" onClick={() => removePost(id)}>
       Delete
-    </Link>
+    </button>
   );
 };
 

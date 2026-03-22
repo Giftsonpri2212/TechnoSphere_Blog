@@ -36,36 +36,3 @@
     transform: rotate(360deg);
   }
 }
-
-/* Make the entire app full height */
-html, body, #root {
-  height: 100%;
-  margin: 0;
-}
-
-/* Flex layout for header, main, footer */
-.app {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh; /* full viewport height */
-}
-
-/* Main content stretches to push footer down */
-.main-content {
-  flex: 1;
-  display: flex;       /* optional: if you want inner content to stretch too */
-  flex-direction: column;
-}
-
-/* Optional: keep your footer styles */
-footer {
-  background-color: var(--color-gray-900);
-  padding: 6rem;
-  color: var(--color-white);
-  border-top: 2px solid var(--color-gray-700);
-}
-
-.footer__categories a:hover{
-  background: var(--color-white);
-  color: var(--color-gray-900);
-}

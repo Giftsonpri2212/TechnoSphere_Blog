@@ -4,16 +4,22 @@ import "react-quill/dist/quill.snow.css";
 import { UserContext } from "../context/userContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import DOMPurify from "dompurify";
 
 const CreatePosts = () => {
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState(""); // start empty
+  const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [thumbnail, setThumbnail] = useState(null);
   const [error, setError] = useState("");
+  const [aiTopic, setAiTopic] = useState("");
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [isPreview, setIsPreview] = useState(false);
+  const [autosaveState, setAutosaveState] = useState("idle");
+  const [lastSavedAt, setLastSavedAt] = useState(null);
 
   const navigate = useNavigate();
-  const { currentUser } = useContext(UserContext);
+  const { currentUser, showToast } = useContext(UserContext);
   const token = currentUser?.token;
 
   // Redirect to login if user is not logged in
@@ -22,6 +28,69 @@ const CreatePosts = () => {
       navigate("/login");
     }
   }, [token, navigate]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const restoreDraft = async () => {
+      try {
+        const response = await axios.get(
+          `${process.env.REACT_APP_BASE_URL}/drafts/new`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
+          },
+        );
+        const draft = response.data;
+        if (!draft) return;
+        if (draft.title) setTitle(draft.title);
+        if (draft.category) setCategory(draft.category);
+        if (draft.description) setDescription(draft.description);
+      } catch (error) {
+        // Silent restore fail
+      }
+    };
+
+    restoreDraft();
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const saveDraft = async () => {
+      if (!title.trim() && !category.trim() && !description.trim()) return;
+      setAutosaveState("saving");
+      try {
+        await axios.post(
+          `${process.env.REACT_APP_BASE_URL}/drafts/autosave`,
+          { title, category, description, postId: null },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
+          },
+        );
+        setAutosaveState("saved");
+        setLastSavedAt(new Date());
+      } catch (error) {
+        setAutosaveState("error");
+      }
+    };
+
+    const timer = setInterval(() => {
+      saveDraft();
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [token, title, category, description]);
+
+  const autosaveText =
+    autosaveState === "saving"
+      ? "Saving draft..."
+      : autosaveState === "saved"
+        ? `Saved ${lastSavedAt ? lastSavedAt.toLocaleTimeString("en-IN") : ""}`
+        : autosaveState === "error"
+          ? "Autosave unavailable"
+          : "Draft idle";
 
   const POST_CATEGORIES = [
     "Programming",
@@ -71,9 +140,11 @@ const CreatePosts = () => {
   const createPost = async (e) => {
     e.preventDefault();
 
-    // ✅ Validate category
+    // Validate category
     if (!POST_CATEGORIES.includes(category)) {
-      setError("Please select a valid category from the list.");
+      const message = "Please select a valid category from the list.";
+      setError(message);
+      showToast(message, "error");
       return;
     }
 
@@ -92,25 +163,129 @@ const CreatePosts = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (response.status === 200 || response.status === 201) {
+        showToast("Post created successfully.", "success");
         navigate("/");
       } else {
-        setError("Post not created. Try again!");
+        const message = "Post not created. Try again!";
+        setError(message);
+        showToast(message, "error");
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Something went wrong");
+      const message = err.response?.data?.message || "Something went wrong";
+      setError(message);
+      showToast(message, "error");
+    }
+  };
+
+  const extractPlainText = (html = "") =>
+    html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
+  const generateWithAi = async () => {
+    const topic = aiTopic.trim() || title.trim();
+
+    if (!topic) {
+      const message = "Enter a topic before generating AI content.";
+      setError(message);
+      showToast(message, "error");
+      return;
+    }
+
+    setIsGeneratingAi(true);
+    setError("");
+
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_BASE_URL}/posts/ai/draft`,
+        {
+          topic,
+          category: category || "Programming",
+          tone: "professional",
+        },
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const generatedTitle = response.data?.title;
+      const generatedDescription = response.data?.description;
+      const generatedTextLength = extractPlainText(generatedDescription).length;
+
+      if (!generatedDescription || generatedTextLength < 500) {
+        throw new Error("AI returned short content. Please try again.");
+      }
+
+      if (generatedTitle) setTitle(generatedTitle);
+      setDescription(generatedDescription);
+      setAiTopic(topic);
+      setIsPreview(false);
+
+      const statusMessage = response.data?.aiExpanded
+        ? "AI draft generated and expanded into a full article."
+        : "AI draft generated with full article content.";
+
+      showToast(statusMessage, "success");
+    } catch (err) {
+      const message =
+        err.response?.data?.message ||
+        err.message ||
+        "AI draft generation failed.";
+      setError(message);
+      showToast(message, "error");
+    } finally {
+      setIsGeneratingAi(false);
     }
   };
 
   return (
     <section className="create-post">
       <div className="container">
-        <h2>Create Post</h2>
+        <div className="editor-shell__header">
+          <h2>Create Post</h2>
+          <div className="editor-shell__actions">
+            <span className={`editor-shell__autosave is-${autosaveState}`}>
+              {autosaveText}
+            </span>
+            <button
+              type="button"
+              className="btn sm"
+              onClick={() => setIsPreview((prev) => !prev)}
+            >
+              {isPreview ? "Edit Mode" : "Preview Mode"}
+            </button>
+          </div>
+        </div>
         {error && <p className="form__error-message">{error}</p>}
         <form className="form create-post__form" onSubmit={createPost}>
+          <div className="ai-tools">
+            <div className="ai-tools__row">
+              <input
+                type="text"
+                placeholder="AI topic (example: React performance optimization)"
+                value={aiTopic}
+                onChange={(e) => setAiTopic(e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn"
+                onClick={generateWithAi}
+                disabled={isGeneratingAi}
+              >
+                {isGeneratingAi ? "Generating..." : "Write Using AI"}
+              </button>
+            </div>
+            <p className="ai-tools__hint">
+              AI generates a draft title and article body. You can fully edit it
+              before publishing.
+            </p>
+          </div>
+
           <input
             type="text"
             placeholder="Title"
@@ -133,13 +308,24 @@ const CreatePosts = () => {
             ))}
           </select>
 
-          <ReactQuill
-            modules={modules}
-            formats={formats}
-            value={description}
-            onChange={setDescription}
-            className="ql-editor"
-          />
+          {isPreview ? (
+            <article
+              className="editor-preview"
+              dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(
+                  description || "<p>Nothing to preview yet.</p>",
+                ),
+              }}
+            />
+          ) : (
+            <ReactQuill
+              modules={modules}
+              formats={formats}
+              value={description}
+              onChange={setDescription}
+              className="ql-editor"
+            />
+          )}
 
           <input
             type="file"

@@ -17,6 +17,15 @@ const userSchema = new Schema({
     type: Number,
     default: 0,
   },
+  role: {
+    type: String,
+    enum: ["admin", "author", "reader"],
+    default: "author",
+  },
+  refreshTokenVersion: {
+    type: Number,
+    default: 0,
+  },
 });
 
 module.exports = model("User", userSchema);

@@ -15,10 +15,8 @@ const PostAuthor = ({ authorID, createdAt }) => {
     const getAuthor = async () => {
       try {
         const response = await axios.get(
-          `${process.env.REACT_APP_BASE_URL}/users/${authorID}`
+          `${process.env.REACT_APP_BASE_URL}/users/${authorID}`,
         );
-
-        console.log("Author API response:", response.data);
         setAuthor(response.data.user || response.data);
       } catch (error) {
         console.error("Error fetching author:", error);
@@ -27,7 +25,6 @@ const PostAuthor = ({ authorID, createdAt }) => {
     if (authorID) getAuthor();
   }, [authorID]);
 
-  // ✅ Memoize and validate date
   const createdDate = useMemo(() => {
     const d = new Date(createdAt);
     return isNaN(d) ? null : d;
@@ -49,7 +46,6 @@ const PostAuthor = ({ authorID, createdAt }) => {
       <div className="post__author-details">
         <h5>By: {author?.name || "Unknown Author"}</h5>
 
-        {/* ✅ Show only relative time (e.g. "3 days ago") */}
         <small>
           {createdDate ? (
             <ReactTimeAgo date={createdDate} locale="en" />
@@ -57,9 +53,8 @@ const PostAuthor = ({ authorID, createdAt }) => {
             "Unknown time"
           )}
         </small>
-        <br />
 
-        {/* ❌ Commented out exact IST time */}
+        {/*  Commented out exact IST time */}
         {/*
         <small>
           {createdDate
